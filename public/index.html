@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>出欠確認ツール</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#333;font-size:15px;}
+.app{max-width:460px;margin:0 auto;padding:12px;}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 0 16px;}
+.hdr h1{font-size:18px;font-weight:700;color:#06C755;}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#333;font-size:13px;cursor:pointer;font-family:inherit;transition:background .12s;}
+.btn:hover{background:#f5f5f5;}
+.btn-g{background:#06C755;border-color:#06C755;color:#fff;}
+.btn-g:hover{background:#05b04b;}
+.btn-g:disabled{background:#ccc;border-color:#ccc;cursor:not-allowed;}
+.btn-full{width:100%;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.badge{display:inline-block;font-size:11px;font-weight:500;border-radius:4px;padding:2px 7px;}
+.bg-open{background:#e8f5e9;color:#2e7d32;}
+.bg-closed{background:#f5f5f5;color:#999;}
+.fl{font-size:12px;color:#666;margin-bottom:5px;}
+.fr{margin-bottom:12px;}
+input,select,textarea{border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;width:100%;font-family:inherit;color:#333;background:#fff;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#06C755;}
+.back{font-size:13px;color:#666;cursor:pointer;padding:4px 0 12px;display:inline-block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;}
+.tab{padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #ddd;background:#f5f5f5;color:#666;}
+.tab-a{background:#06C755;border-color:#06C755;color:#fff;}
+.prog-bar{height:5px;background:#eee;border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.prog-fill{height:100%;background:#06C755;border-radius:3px;}
+.name-list{max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;margin-top:4px;}
+.name-item{padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #eee;}
+.name-item:last-child{border-bottom:none;}
+.name-item:hover{background:#f9f9f9;}
+.name-item.sel{background:#e8f5e9;color:#2e7d32;}
+.q-block{background:#f9f9f9;border-radius:10px;padding:14px;margin-bottom:12px;}
+.q-title{font-size:14px;font-weight:600;margin-bottom:10px;}
+.opts-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.opt-btn{padding:8px 14px;border-radius:8px;border:2px solid #ddd;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;transition:all .12s;}
+.opt-btn.sel{border-color:#06C755;background:#e8f5e9;color:#2e7d32;font-weight:500;}
+.opt-btn.sel-multi{border-color:#1565c0;background:#e3f2fd;color:#1565c0;font-weight:500;}
+.default-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0;}
+.d-btn{padding:14px 8px;border-radius:10px;border:2px solid #ddd;background:#fff;cursor:pointer;font-size:22px;font-family:inherit;transition:all .12s;text-align:center;}
+.d-btn.sel-y{border-color:#2e7d32;background:#e8f5e9;}
+.d-btn.sel-m{border-color:#e65100;background:#fff3e0;}
+.d-btn.sel-n{border-color:#c62828;background:#fde8e8;}
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+.sum-c{background:#f9f9f9;border-radius:8px;padding:8px;text-align:center;}
+.sum-n{font-size:20px;font-weight:600;}
+.sum-l{font-size:11px;color:#999;margin-top:2px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:7px 8px;font-weight:500;border-bottom:1px solid #eee;color:#888;font-size:12px;}
+td{padding:7px 8px;border-bottom:1px solid #eee;vertical-align:top;}
+.ans-y{color:#2e7d32;font-weight:500;}
+.ans-n{color:#c62828;font-weight:500;}
+.ans-m{color:#e65100;font-weight:500;}
+.ans-z{color:#bbb;}
+.rr{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.rr select{flex:1;}
+.qrow{background:#f9f9f9;border-radius:8px;padding:10px;margin-bottom:8px;}
+.qrow-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.optrow{display:flex;gap:6px;align-items:center;margin-bottom:5px;}
+.optrow input{flex:1;}
+.cbox{background:#f9f9f9;border-radius:8px;padding:10px;font-size:12px;line-height:1.7;color:#555;margin:8px 0;white-space:pre-wrap;word-break:break-all;}
+.mr{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;}
+.remembered{display:flex;align-items:center;gap:8px;background:#e8f5e9;border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:13px;color:#2e7d32;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
+.q-result{margin-bottom:16px;}
+.q-result-title{font-size:13px;font-weight:600;color:#555;margin-bottom:6px;border-left:3px solid #06C755;padding-left:8px;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px;}
+.bar-label{width:80px;text-align:right;color:#555;}
+.bar-track{flex:1;background:#eee;border-radius:3px;height:14px;overflow:hidden;}
+.bar-fill{height:100%;background:#06C755;border-radius:3px;}
+.bar-count{width:24px;color:#888;}
+</style>
+</head>
+<body>
+<div id="app" class="app"><p style="padding:40px;text-align:center;color:#999">読み込み中...</p></div>
+<div id="toast" class="toast"></div>
+<script>
+const REM=[{l:'3日前',h:72},{l:'2日前',h:48},{l:'1日前',h:24},{l:'12時間前',h:12},{l:'6時間前',h:6},{l:'3時間前',h:3},{l:'1時間前',h:1},{l:'30分前',h:0.5}];
+const DEF_Q={id:'q_default',text:'出欠',type:'single',options:['参加','欠席','未定']};
+
+let S={page:'home',atab:'ev',alogIn:false,events:[],members:[],responses:{},selEv:null,selMem:'',selAns:{},rememberedMem:'',search:'',loaded:false};
+
+const uid=()=>'id'+Math.random().toString(36).slice(2,8);
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+async function api(p,b){const o=b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{};const r=await fetch(p,o);return r.json();}
+
+function isAnswered(resp){
+  if(!resp)return false;
+  if(typeof resp==='string')return true;
+  return Object.keys(resp).length>0;
+}
+
+function getQuestions(e){
+  return(e.questions&&e.questions.length>0)?e.questions:[DEF_Q];
+}
+
+function fmt(e){if(!e.dDate)return'';return e.dDate.replace(/-/g,'/')+(e.dTime?' '+e.dTime+'まで':'');}
+function isOpen(e){if(!e.dDate)return true;return new Date(e.dDate+'T'+(e.dTime||'23:59'))>new Date();}
+
+function stats(eid){
+  let ans=0,z=0;
+  const r=S.responses[eid]||{};
+  for(const m of S.members){isAnswered(r[m.id])?ans++:z++;}
+  return{ans,z,total:S.members.length};
+}
+
+function memName(id){return S.members.find(m=>m.id===id)?.name||'';}
+
+async function init(){
+  const d=await api('/api/data');
+  S.members=d.members||[];S.events=d.events||[];S.responses=d.responses||{};
+  S.rememberedMem=localStorage.getItem('lastMem')||'';
+  S.loaded=true;render();
+}
+
+function render(){
+  if(!S.loaded)return;
+  const pages={home:rHome,attend:rAttend,results:rResults,admin:rAdmin};
+  document.getElementById('app').innerHTML=(pages[S.page]||rHome)();
+}
+
+function rHome(){
+  const cards=S.events.length?S.events.map(e=>{
+    const st=stats(e.id),op=isOpen(e);
+    const pct=st.total?Math.round(st.ans/st.total*100):0;
+    const qs=getQuestions(e);
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div style="font-size:15px;font-weight:700;flex:1;margin-right:8px;">${e.title}</div>
+        <span class="badge ${op?'bg-open':'bg-closed'}">${op?'受付中':'締切'}</span>
+      </div>
+      <div style="font-size:12px;color:#999;margin-bottom:8px;">期限：${fmt(e)}</div>
+      ${qs.length>1?`<div style="font-size:11px;color:#888;margin-bottom:6px;">質問${qs.length}項目</div>`:''}
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div style="font-size:12px;color:#888;margin-bottom:10px;">${st.ans}名回答済 / ${st.total}名中（${pct}%）</div>
+      <div style="display:flex;gap:8px;">
+        ${op?`<button class="btn btn-g" style="flex:1;" onclick="nav('attend','${e.id}')">回答する</button>`:''}
+        <button class="btn" style="flex:1;" onclick="nav('results','${e.id}')">結果を見る</button>
+      </div>
+    </div>`;
+  }).join(''):'<div class="card" style="text-align:center;color:#999;padding:28px;">イベントがまだありません</div>';
+  return`<div class="hdr"><h1>出欠確認ツール</h1><button class="btn btn-sm" onclick="nav('admin')">管理者</button></div>${cards}`;
+}
+
+function rAttend(){
+  const e=S.events.find(x=>x.id===S.selEv);if(!e)return rHome();
+  const r=S.responses[e.id]||{};
+  const activeMem=S.selMem||S.rememberedMem;
+  const qs=getQuestions(e);
+  const myAns=activeMem?r[activeMem]:null;
+
+  const remBox=S.rememberedMem&&!S.selMem?
+    `<div class="remembered">前回：<strong>${memName(S.rememberedMem)}</strong>さん
+    <button class="btn btn-sm" style="background:#06C755;color:#fff;border-color:#06C755;margin-left:auto;" onclick="S.selMem=S.rememberedMem;S.selAns={};render()">この名前で回答</button>
+    <button class="btn btn-sm" onclick="S.rememberedMem='';localStorage.removeItem('lastMem');S.selMem='';render()">変更</button></div>`:'';
+
+  const showList=!S.rememberedMem||S.selMem!=='';
+  const filtered=S.members.filter(m=>m.name.includes(S.search));
+  const nameList=showList?`
+    <div class="fr">
+      <div class="fl">名前を選択</div>
+      <input type="text" placeholder="名前で絞り込み..." value="${S.search}" oninput="S.search=this.value;render()" style="margin-bottom:4px;">
+      <div class="name-list">${filtered.map(m=>`<div class="name-item ${activeMem===m.id?'sel':''}" onclick="selMem('${m.id}')">${m.name}${isAnswered(r[m.id])?'<span style="float:right;font-size:11px;color:#999;">回答済</span>':''}</div>`).join('')||'<div style="padding:12px;text-align:center;color:#999;font-size:12px;">該当なし</div>'}</div>
+    </div>`:'';
+
+  const selName=S.selMem?`<div style="margin-bottom:12px;padding:8px 12px;border-radius:8px;background:#f5f5f5;font-size:13px;">選択中：<strong>${memName(S.selMem)}</strong>さん <span style="color:#06C755;font-size:12px;cursor:pointer;float:right;" onclick="S.selMem='';S.selAns={};S.search='';render()">変更</span></div>`:'';
+
+  let qHtml='';
+  if(activeMem){
+    const prevAns=(typeof myAns==='object'&&myAns!==null)?myAns:{};
+    if(!S.selAns||Object.keys(S.selAns).length===0){
+      // 現在の回答を初期値としてセット
+    }
+    for(const q of qs){
+      const cur=S.selAns[q.id];
+      if(q.id==='q_default'){
+        const map={参加:'y',欠席:'n',未定:'m'};
+        const rmap={y:'参加',n:'欠席',m:'未定'};
+        qHtml+=`<div class="q-block">
+          <div class="q-title">${q.text}</div>
+          <div class="default-grid">
+            <button class="d-btn ${cur==='参加'?'sel-y':''}" onclick="setAns('${q.id}','参加')"><div>○</div><div style="font-size:12px;margin-top:3px;">参加</div></button>
+            <button class="d-btn ${cur==='未定'?'sel-m':''}" onclick="setAns('${q.id}','未定')"><div>△</div><div style="font-size:12px;margin-top:3px;">未定</div></button>
+            <button class="d-btn ${cur==='欠席'?'sel-n':''}" onclick="setAns('${q.id}','欠席')"><div>×</div><div style="font-size:12px;margin-top:3px;">欠席</div></button>
+          </div>
+        </div>`;
+      } else if(q.type==='single'){
+        const opts=q.options.map(o=>`<button class="opt-btn ${cur===o?'sel':''}" onclick="setAns('${q.id}','${o}')">${o}</button>`).join('');
+        qHtml+=`<div class="q-block"><div class="q-title">${q.text}</div><div class="opts-grid">${opts}</div></div>`;
+      } else {
+        const arr=Array.isArray(cur)?cur:[];
+        const opts=q.options.map(o=>`<button class="opt-btn ${arr.includes(o)?'sel-multi':''}" onclick="toggleMulti('${q.id}','${o}')">${o}</button>`).join('');
+        qHtml+=`<div class="q-block"><div class="q-title">${q.text} <span style="font-size:11px;color:#888;">（複数選択可）</span></div><div class="opts-grid">${opts}</div></div>`;
+      }
+    }
+  }
+
+  const canSubmit=activeMem&&qs.every(q=>{
+    const v=S.selAns[q.id];
+    if(!v)return false;
+    if(Array.isArray(v))return v.length>0;
+    return true;
+  });
+
+  return`<div>
+    <div class="back" onclick="nav('home')">← 戻る</div>
+    <div class="card">
+      <div style="font-size:15px;font-weight:700;margin-bottom:2px;">${e.title}</div>
+      <div style="font-size:12px;color:#999;margin-bottom:14px;">期限：${fmt(e)}</div>
+      ${remBox}${nameList}${selName}
+      ${activeMem?`${qHtml}<button class="btn btn-g btn-full" onclick="doSubmit()" ${!canSubmit?'disabled':''}>回答を送信</button>`:''}
+    </div>
+  </div>`;
+}
+
+function setAns(qid,val){if(!S.selAns)S.selAns={};S.selAns[qid]=val;render();}
+function toggleMulti(qid,val){
+  if(!S.selAns)S.selAns={};
+  const arr=Array.isArray(S.selAns[qid])?[...S.selAns[qid]]:[];
+  const i=arr.indexOf(val);
+  i>=0?arr.splice(i,1):arr.push(val);
+  S.selAns[qid]=arr;render();
+}
+function selMem(id){S.selMem=id;S.selAns={};S.search='';render();}
+
+async function doSubmit(){
+  const mid=S.selMem||S.rememberedMem;
+  if(!mid||!S.selAns)return;
+  await api('/api/response',{eventId:S.selEv,memberId:mid,answer:S.selAns});
+  if(!S.responses[S.selEv])S.responses[S.selEv]={};
+  S.responses[S.selEv][mid]=S.selAns;
+  S.rememberedMem=mid;localStorage.setItem('lastMem',mid);
+  S.selAns={};S.selMem='';
+  toast('回答を送信しました！');nav('results',S.selEv);
+}
+
+function rResults(){
+  const e=S.events.find(x=>x.id===S.selEv);if(!e)return rHome();
+  const r=S.responses[e.id]||{},st=stats(e.id);
+  const qs=getQuestions(e);
+  const pct=st.total?Math.round(st.ans/st.total*100):0;
+
+  // 質問ごとの集計
+  let qResults='';
+  for(const q of qs){
+    const counts={};
+    for(const opt of q.options)counts[opt]=0;
+    let total=0;
+    for(const m of S.members){
+      const ans=r[m.id];
+      if(!isAnswered(ans))continue;
+      const val=(typeof ans==='object')?ans[q.id]:ans;
+      if(!val)continue;
+      if(Array.isArray(val)){val.forEach(v=>{if(counts[v]!==undefined)counts[v]++;});total++;}
+      else{if(counts[val]!==undefined)counts[val]++;total++;}
+    }
+    const bars=q.options.map(o=>{
+      const pct2=total>0?Math.round(counts[o]/total*100):0;
+      return`<div class="bar-row"><div class="bar-label">${o}</div><div class="bar-track"><div class="bar-fill" style="width:${pct2}%"></div></div><div class="bar-count">${counts[o]}</div></div>`;
+    }).join('');
+    qResults+=`<div class="q-result"><div class="q-result-title">${q.text}</div>${bars}</div>`;
+  }
+
+  // メンバー一覧
+  const rows=S.members.map(m=>{
+    const ans=r[m.id];
+    if(!isAnswered(ans))return`<tr><td>${m.name}</td><td><span class="ans-z">未回答</span></td></tr>`;
+    const cells=qs.map(q=>{
+      const v=(typeof ans==='object')?ans[q.id]:ans;
+      if(!v)return'—';
+      if(Array.isArray(v))return v.join('、');
+      // デフォルト絵文字
+      if(q.id==='q_default'){return v==='参加'?'<span class="ans-y">○ 参加</span>':v==='欠席'?'<span class="ans-n">× 欠席</span>':'<span class="ans-m">△ 未定</span>';}
+      return v;
+    }).join('</td><td>');
+    return`<tr><td>${m.name}</td><td>${cells}</td></tr>`;
+  }).join('');
+
+  const ths=qs.map(q=>`<th>${q.text}</th>`).join('');
+  const nones=S.members.filter(m=>!isAnswered(r[m.id])).map(m=>m.name);
+
+  return`<div>
+    <div class="back" onclick="nav('home')">← 戻る</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:2px;">${e.title}</div>
+    <div style="font-size:12px;color:#999;margin-bottom:10px;">期限：${fmt(e)}</div>
+    <div class="sum-grid">
+      <div class="sum-c" style="grid-column:span 2"><div class="sum-n" style="color:#2e7d32">${st.ans}</div><div class="sum-l">回答済</div></div>
+      <div class="sum-c" style="grid-column:span 2"><div class="sum-n" style="color:#bbb">${st.z}</div><div class="sum-l">未回答</div></div>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+    <div style="font-size:12px;color:#999;margin-bottom:12px;text-align:right;">${pct}% 回答済</div>
+    <div class="card">${qResults}</div>
+    <div class="card" style="overflow-x:auto;"><table><thead><tr><th>名前</th>${ths}</tr></thead><tbody>${rows}</tbody></table></div>
+    ${nones.length?`<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:6px;">未回答者への催促文</div><div class="cbox">【出欠確認のお願い】\n${e.title}の出欠がまだ未回答の方がいらっしゃいます。\n期限：${fmt(e)}\n\n未回答の方：${nones.join('、')}\n\nご回答をお願いします👇\n${window.location.origin}</div><button class="btn btn-full" onclick="doCopy()">コピーしてLINEに貼る</button></div>`:`<div class="card" style="text-align:center;padding:16px;color:#2e7d32;">🎉 全員が回答済みです！</div>`}
+  </div>`;
+}
+
+function rAdmin(){
+  if(!S.alogIn)return`<div>
+    <div class="back" onclick="nav('home')">← 戻る</div>
+    <div class="card"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">管理者ログイン</div>
+    <div class="fr"><div class="fl">パスワード</div><input type="password" id="pw" placeholder="パスワードを入力"></div>
+    <button class="btn btn-g btn-full" onclick="doLogin()">ログイン</button></div></div>`;
+  return S.atab==='mem'?rAMem():rAEv();
+}
+
+function rAEv(){
+  const ROP=REM.map(o=>`<option value="${o.h}">${o.l}</option>`).join('');
+  const evs=S.events.map(e=>{
+    const qs=getQuestions(e);
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;">
+        <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${e.title}</div>
+        <div style="font-size:11px;color:#999;">期限：${fmt(e)}　質問${qs.length}項目</div></div>
+        <button class="btn btn-sm" style="color:#c62828;" onclick="delEv('${e.id}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  return`<div>
+    <div class="back" onclick="nav('home')">← ホームへ</div>
+    <div class="tabs"><div class="tab tab-a">イベント管理</div><div class="tab" onclick="S.atab='mem';render()">メンバー管理（${S.members.length}名）</div></div>
+    ${evs}
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">＋ 新しいイベントを追加</div>
+      <div class="fr"><div class="fl">イベント名</div><input type="text" id="et" placeholder="例：7月 久保田会 勉強会"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" class="fr">
+        <div><div class="fl">回答期限（日）</div><input type="date" id="ed"></div>
+        <div><div class="fl">時刻</div><input type="time" id="eti" value="20:00"></div>
+      </div>
+      <div class="fr"><div class="fl">リマインドタイミング</div>
+        <div id="rrows"><div class="rr"><select>${ROP}</select><button class="btn btn-sm" onclick="rmRR(this)">削除</button></div></div>
+        <button class="btn btn-full" style="margin-top:6px;" onclick="addRR()">＋ タイミングを追加</button>
+      </div>
+      <div class="fr">
+        <div class="fl" style="margin-bottom:8px;">質問項目（省略すると○△×の出欠のみ）</div>
+        <div id="qrows"></div>
+        <button class="btn btn-full" onclick="addQRow()">＋ 質問を追加</button>
+      </div>
+      <button class="btn btn-g btn-full" onclick="addEv()">登録する</button>
+    </div>
+  </div>`;
+}
+
+function addQRow(){
+  const d=document.getElementById('qrows');
+  const qid='q'+uid();
+  const div=document.createElement('div');
+  div.className='qrow';div.id=qid;
+  div.innerHTML=`
+    <div class="qrow-head">
+      <input type="text" placeholder="質問文（例：参加しますか？）" style="flex:1;margin-right:8px;">
+      <select style="width:auto;"><option value="single">単一選択</option><option value="multi">複数選択</option></select>
+      <button class="btn btn-sm" style="color:#c62828;margin-left:6px;" onclick="document.getElementById('${qid}').remove()">削除</button>
+    </div>
+    <div class="fl">選択肢</div>
+    <div class="optrows"></div>
+    <button class="btn btn-full" style="font-size:12px;" onclick="addOptRow(this)">＋ 選択肢を追加</button>`;
+  d.appendChild(div);
+  addOptRow(div.querySelector('button'));
+  addOptRow(div.querySelector('button'));
+}
+
+function addOptRow(btn){
+  const container=btn.previousElementSibling;
+  const r=document.createElement('div');r.className='optrow';
+  r.innerHTML=`<input type="text" placeholder="選択肢テキスト"><button class="btn btn-sm" style="color:#c62828;" onclick="this.parentElement.remove()">×</button>`;
+  container.appendChild(r);
+}
+
+function rAMem(){
+  const rows=S.members.map((m,i)=>`<div class="mr"><span style="font-size:13px;">${i+1}. ${m.name}</span><button class="btn btn-sm" style="color:#c62828;" onclick="delMem('${m.id}')">削除</button></div>`).join('');
+  return`<div>
+    <div class="back" onclick="nav('home')">← ホームへ</div>
+    <div class="tabs"><div class="tab" onclick="S.atab='ev';render()">イベント管理</div><div class="tab tab-a">メンバー管理（${S.members.length}名）</div></div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">メンバー一覧</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="nm" placeholder="名前を入力して追加" style="flex:1;">
+        <button class="btn btn-g" style="flex-shrink:0;" onclick="addMem()">追加</button>
+      </div>${rows}
+    </div>
+  </div>`;
+}
+
+function nav(p,eid){S.page=p;if(eid)S.selEv=eid;if(p==='attend'){S.selMem='';S.selAns={};S.search='';}render();}
+async function doLogin(){const r=await api('/api/verify-password',{password:document.getElementById('pw')?.value});if(r.ok){S.alogIn=true;S.atab='ev';render();}else alert('パスワードが違います');}
+
+async function addEv(){
+  const t=document.getElementById('et')?.value?.trim();if(!t){alert('イベント名を入力してください');return;}
+  const rems=Array.from(document.querySelectorAll('#rrows select')).map(s=>({h:parseFloat(s.value)}));
+  // 質問を収集
+  const questions=[];
+  for(const qrow of document.querySelectorAll('#qrows .qrow')){
+    const text=qrow.querySelector('input[type=text]')?.value?.trim();
+    const type=qrow.querySelector('select')?.value;
+    const opts=Array.from(qrow.querySelectorAll('.optrows input')).map(i=>i.value.trim()).filter(Boolean);
+    if(text&&opts.length>0)questions.push({id:uid(),text,type,options:opts});
+  }
+  const ev={id:uid(),title:t,dDate:document.getElementById('ed')?.value,dTime:document.getElementById('eti')?.value,rems,questions};
+  S.events.push(ev);S.responses[ev.id]={};
+  await api('/api/events',{events:S.events});
+  toast('イベントを登録しました！');render();
+}
+
+async function delEv(id){if(!confirm('削除しますか？'))return;S.events=S.events.filter(e=>e.id!==id);delete S.responses[id];await api('/api/events',{events:S.events});render();}
+async function addMem(){const n=document.getElementById('nm')?.value?.trim();if(!n)return;S.members.push({id:uid(),name:n});await api('/api/members',{members:S.members});document.getElementById('nm').value='';render();}
+async function delMem(id){if(!confirm('削除しますか？'))return;S.members=S.members.filter(m=>m.id!==id);await api('/api/members',{members:S.members});render();}
+function addRR(){const r=document.createElement('div');r.className='rr';r.innerHTML=`<select>${REM.map(o=>`<option value="${o.h}">${o.l}</option>`).join('')}</select><button class="btn btn-sm" onclick="rmRR(this)">削除</button>`;document.getElementById('rrows')?.appendChild(r);}
+function rmRR(b){if(document.querySelectorAll('#rrows .rr').length>1)b.parentElement.remove();}
+function doCopy(){
+  const e=S.events.find(x=>x.id===S.selEv);const r=S.responses[e.id]||{};
+  const ns=S.members.filter(m=>!isAnswered(r[m.id])).map(m=>m.name).join('、');
+  const msg=`【出欠確認のお願い】\n${e.title}の出欠がまだ未回答の方がいらっしゃいます。\n期限：${fmt(e)}\n\n未回答の方：${ns}\n\nご回答をお願いします👇\n${window.location.origin}`;
+  navigator.clipboard?navigator.clipboard.writeText(msg).then(()=>toast('コピーしました！')).catch(()=>prompt('コピー:',msg)):prompt('コピー:',msg);
+}
+init();
+</script>
+</body>
+</html>

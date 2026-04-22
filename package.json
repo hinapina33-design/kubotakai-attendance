@@ -1,0 +1,14 @@
+{
+  "name": "kubotakai-attendance",
+  "version": "1.0.0",
+  "description": "出欠確認ツール for 久保田会",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "node-cron": "^3.0.3"
+  }
+}

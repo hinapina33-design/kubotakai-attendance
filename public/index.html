@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出欠確認ツール</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#333;}
+.app{max-width:420px;margin:0 auto;padding:12px;}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 0 16px;}
+.hdr h1{font-size:18px;font-weight:600;color:#06C755;}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#333;font-size:13px;cursor:pointer;font-family:inherit;}
+.btn:hover{background:#f5f5f5;}
+.btn-p{background:#06C755;border-color:#06C755;color:#fff;}
+.btn-p:hover{background:#05b04b;}
+.btn-p:disabled{background:#ccc;border-color:#ccc;cursor:not-allowed;}
+.btn-full{width:100%;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.badge{display:inline-block;font-size:11px;font-weight:500;border-radius:4px;padding:2px 7px;}
+.bg-open{background:#e8f5e9;color:#2e7d32;}
+.bg-closed{background:#f5f5f5;color:#999;}
+.ans-y{color:#2e7d32;font-weight:500;}
+.ans-n{color:#c62828;font-weight:500;}
+.ans-m{color:#e65100;font-weight:500;}
+.ans-z{color:#999;}
+.abtn{padding:12px 8px;border-radius:10px;border:2px solid #ddd;background:#fff;cursor:pointer;font-size:24px;width:100%;font-family:inherit;transition:all .15s;}
+.abtn-y.sel{border-color:#2e7d32;background:#e8f5e9;}
+.abtn-n.sel{border-color:#c62828;background:#fde8e8;}
+.abtn-m.sel{border-color:#e65100;background:#fff3e0;}
+.agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0;}
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
+.sum-c{background:#f9f9f9;border-radius:8px;padding:8px;text-align:center;}
+.sum-n{font-size:20px;font-weight:600;}
+.sum-l{font-size:11px;color:#999;margin-top:2px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:6px 8px;font-weight:500;border-bottom:1px solid #eee;color:#999;}
+td{padding:8px 8px;border-bottom:1px solid #eee;}
+.fl{font-size:12px;color:#666;margin-bottom:5px;}
+input,select{border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;width:100%;font-family:inherit;color:#333;background:#fff;}
+input:focus,select:focus{outline:none;border-color:#06C755;}
+.fr{margin-bottom:12px;}
+.back{font-size:13px;color:#666;cursor:pointer;padding:4px 0 12px;display:inline-block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;}
+.tab{padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #ddd;background:#f5f5f5;color:#666;}
+.tab-a{background:#06C755;border-color:#06C755;color:#fff;}
+.mr{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;}
+.rr{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.rr select{flex:1;}
+.cbox{background:#f9f9f9;border-radius:8px;padding:10px;font-size:12px;line-height:1.7;color:#555;margin:8px 0;white-space:pre-wrap;word-break:break-all;}
+.remembered{display:flex;align-items:center;gap:8px;background:#e8f5e9;border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:13px;color:#2e7d32;}
+.name-list{max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;margin-top:4px;background:#fff;}
+.name-item{padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #eee;}
+.name-item:last-child{border-bottom:none;}
+.name-item:hover{background:#f9f9f9;}
+.name-item.selected{background:#e8f5e9;color:#2e7d32;}
+.prog-bar{height:5px;background:#eee;border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.prog-fill{height:100%;background:#06C755;border-radius:3px;transition:width .3s;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="app" class="app"><p style="padding:40px;text-align:center;color:#999">読み込み中...</p></div>
+<div id="toast" class="toast"></div>
+<script>
+const REM=[{l:'3日前',h:72},{l:'2日前',h:48},{l:'1日前',h:24},{l:'12時間前',h:12},{l:'6時間前',h:6},{l:'3時間前',h:3},{l:'1時間前',h:1},{l:'30分前',h:0.5}];
+let S={page:'home',atab:'ev',alogIn:false,events:[],members:[],responses:{},sentReminders:{},selEv:null,selMem:'',selAns:null,rememberedMem:'',search:'',loaded:false};
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function uid(){return 'id'+Math.random().toString(36).slice(2,8);}
+
+async function api(path,body){
+  const opt=body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{};
+  const r=await fetch(path,opt);return r.json();
+}
+
+async function init(){
+  const d=await api('/api/data');
+  S.members=d.members||[];S.events=d.events||[];S.responses=d.responses||{};S.sentReminders=d.sentReminders||{};
+  S.rememberedMem=localStorage.getItem('lastMem')||'';
+  S.loaded=true;render();
+}
+
+function fmt(e){if(!e.dDate)return '';return e.dDate.replace(/-/g,'/')+(e.dTime?' '+e.dTime+'まで':'');}
+function isOpen(e){if(!e.dDate)return true;return new Date(e.dDate+'T'+(e.dTime||'23:59'))>new Date();}
+function stats(eid){let y=0,n=0,m=0,z=0;const r=S.responses[eid]||{};for(const mb of S.members){const a=r[mb.id];a==='yes'?y++:a==='no'?n++:a==='may'?m++:z++;}return{y,n,m,z};}
+function memName(id){return S.members.find(m=>m.id===id)?.name||'';}
+
+function render(){
+  if(!S.loaded)return;
+  const pages={home:rHome,attend:rAttend,results:rResults,admin:rAdmin};
+  document.getElementById('app').innerHTML=(pages[S.page]||rHome)();
+}
+
+function rHome(){
+  const cards=S.events.length?S.events.map(e=>{
+    const st=stats(e.id),op=isOpen(e);
+    const total=S.members.length,done=st.y+st.n+st.m;
+    const pct=total?Math.round(done/total*100):0;
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div style="font-size:15px;font-weight:600;flex:1;margin-right:8px;">${e.title}</div>
+        <span class="badge ${op?'bg-open':'bg-closed'}">${op?'受付中':'締切'}</span>
+      </div>
+      <div style="font-size:12px;color:#999;margin-bottom:8px;">期限：${fmt(e)}</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div style="display:flex;gap:12px;font-size:13px;margin-bottom:12px;">
+        <span class="ans-y">○ ${st.y}名</span><span class="ans-m">△ ${st.m}名</span><span class="ans-n">× ${st.n}名</span><span class="ans-z">未 ${st.z}名</span>
+        <span style="margin-left:auto;font-size:11px;color:#999;">${pct}%回答済</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        ${op?`<button class="btn btn-p" style="flex:1;" onclick="nav('attend','${e.id}')">出欠を回答する</button>`:''}
+        <button class="btn" style="flex:1;" onclick="nav('results','${e.id}')">結果を見る</button>
+      </div>
+    </div>`;
+  }).join(''):'<div class="card" style="text-align:center;color:#999;padding:28px;">イベントがまだありません</div>';
+  return`<div class="hdr"><h1>出欠確認ツール</h1><button class="btn btn-sm" onclick="nav('admin')">管理者</button></div>${cards}`;
+}
+
+function rAttend(){
+  const e=S.events.find(x=>x.id===S.selEv);if(!e)return rHome();
+  const r=S.responses[e.id]||{};
+  const remBox=S.rememberedMem&&!S.selMem?
+    `<div class="remembered">前回：<strong>${memName(S.rememberedMem)}</strong>さん &nbsp;<button class="btn btn-sm" style="background:#06C755;color:#fff;border-color:#06C755;" onclick="S.selMem=S.rememberedMem;S.selAns=null;render()">この名前で回答</button><button class="btn btn-sm" style="margin-left:4px;" onclick="S.rememberedMem='';localStorage.removeItem('lastMem');S.selMem='';render()">変更</button></div>`:'';
+  const filtered=S.members.filter(m=>m.name.includes(S.search));
+  const showList=!S.rememberedMem||S.selMem!==''?true:false;
+  const nameList=showList?`
+    <div class="fr">
+      <div class="fl">名前を選択（${S.members.length}名）</div>
+      <input type="text" placeholder="名前で絞り込み..." value="${S.search}" oninput="S.search=this.value;render()" style="margin-bottom:4px;">
+      <div class="name-list">${filtered.map(m=>`<div class="name-item ${(S.selMem||S.rememberedMem)===m.id?'selected':''}" onclick="selMem('${m.id}')">${m.name}${r[m.id]?' <small style="color:#999">'+(r[m.id]==='yes'?'○':r[m.id]==='no'?'×':'△')+'回答済</small>':''}</div>`).join('')||'<div style="padding:12px;text-align:center;color:#999;font-size:12px;">該当なし</div>'}</div>
+    </div>`:'';
+  const selName=S.selMem?`<div style="margin-bottom:10px;padding:8px 12px;border-radius:8px;background:#f5f5f5;font-size:13px;">選択中：<strong>${memName(S.selMem)}</strong>さん　<span style="color:#06C755;font-size:12px;cursor:pointer;" onclick="S.selMem='';S.selAns=null;S.search='';render()">変更</span></div>`:'';
+  const activeMem=S.selMem||S.rememberedMem;
+  const myAns=activeMem?r[activeMem]:null;
+  const already=myAns&&activeMem?`<div style="margin-bottom:8px;font-size:12px;color:#666;">現在の回答：<strong>${myAns==='yes'?'○ 参加':myAns==='no'?'× 欠席':'△ 未定'}</strong>　変更できます</div>`:'';
+  return`<div>
+    <div class="back" onclick="nav('home')">← 戻る</div>
+    <div class="card">
+      <div style="font-size:15px;font-weight:600;margin-bottom:2px;">${e.title}</div>
+      <div style="font-size:12px;color:#999;margin-bottom:14px;">期限：${fmt(e)}</div>
+      ${remBox}${nameList}${selName}${already}
+      ${activeMem?`
+      <div class="fl" style="margin-bottom:6px;">出欠を選択</div>
+      <div class="agrid">
+        <button class="abtn abtn-y ${S.selAns==='yes'?'sel':''}" onclick="S.selAns='yes';render()"><div>○</div><div style="font-size:12px;margin-top:3px;">参加</div></button>
+        <button class="abtn abtn-m ${S.selAns==='may'?'sel':''}" onclick="S.selAns='may';render()"><div>△</div><div style="font-size:12px;margin-top:3px;">未定</div></button>
+        <button class="abtn abtn-n ${S.selAns==='no'?'sel':''}" onclick="S.selAns='no';render()"><div>×</div><div style="font-size:12px;margin-top:3px;">欠席</div></button>
+      </div>
+      <button class="btn btn-p btn-full" onclick="doSubmit()" ${!S.selAns?'disabled':''}>回答を送信</button>`:''}
+    </div>
+  </div>`;
+}
+
+function selMem(id){S.selMem=id;S.selAns=null;S.search='';render();}
+
+async function doSubmit(){
+  const mid=S.selMem||S.rememberedMem;
+  if(!mid||!S.selAns)return;
+  await api('/api/response',{eventId:S.selEv,memberId:mid,answer:S.selAns});
+  if(!S.responses[S.selEv])S.responses[S.selEv]={};
+  S.responses[S.selEv][mid]=S.selAns;
+  S.rememberedMem=mid;localStorage.setItem('lastMem',mid);
+  S.selAns=null;S.selMem='';
+  toast('回答を送信しました！');
+  nav('results',S.selEv);
+}
+
+function rResults(){
+  const e=S.events.find(x=>x.id===S.selEv);if(!e)return rHome();
+  const r=S.responses[e.id]||{},st=stats(e.id);
+  const total=S.members.length,pct=total?Math.round((st.y+st.n+st.m)/total*100):0;
+  const rows=S.members.map(m=>{
+    const a=r[m.id];
+    const lbl=a==='yes'?'<span class="ans-y">○ 参加</span>':a==='no'?'<span class="ans-n">× 欠席</span>':a==='may'?'<span class="ans-m">△ 未定</span>':'<span class="ans-z">未回答</span>';
+    return`<tr><td>${m.name}</td><td>${lbl}</td></tr>`;
+  }).join('');
+  const nones=S.members.filter(m=>!r[m.id]).map(m=>m.name);
+  return`<div>
+    <div class="back" onclick="nav('home')">← 戻る</div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:2px;">${e.title}</div>
+    <div style="font-size:12px;color:#999;margin-bottom:10px;">期限：${fmt(e)}</div>
+    <div class="sum-grid">
+      <div class="sum-c"><div class="sum-n ans-y">${st.y}</div><div class="sum-l">○ 参加</div></div>
+      <div class="sum-c"><div class="sum-n ans-m">${st.m}</div><div class="sum-l">△ 未定</div></div>
+      <div class="sum-c"><div class="sum-n ans-n">${st.n}</div><div class="sum-l">× 欠席</div></div>
+      <div class="sum-c"><div class="sum-n ans-z">${st.z}</div><div class="sum-l">未回答</div></div>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+    <div style="font-size:12px;color:#999;margin-bottom:10px;text-align:right;">${pct}% 回答済（${total}名中 ${total-st.z}名）</div>
+    <div class="card"><table><thead><tr><th>名前</th><th>回答</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${nones.length?`<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:6px;">未回答者への催促文</div><div class="cbox">【出欠確認のお願い】\n${e.title}の出欠がまだ未回答の方がいらっしゃいます。\n期限：${fmt(e)}\n\n未回答：${nones.join('、')}\n\nこちらから回答をお願いします👇\n${window.location.origin}</div><button class="btn btn-full" onclick="doCopy()">コピーしてLINEに貼る</button></div>`:`<div class="card" style="text-align:center;padding:16px;color:#2e7d32;font-size:14px;">🎉 全員が回答済みです！</div>`}
+  </div>`;
+}
+
+function rAdmin(){
+  if(!S.alogIn)return`<div>
+    <div class="back" onclick="nav('home')">← 戻る</div>
+    <div class="card">
+      <div style="font-size:15px;font-weight:600;margin-bottom:12px;">管理者ログイン</div>
+      <div class="fr"><div class="fl">パスワード</div><input type="password" id="pw" placeholder="パスワードを入力"></div>
+      <button class="btn btn-p btn-full" onclick="doLogin()">ログイン</button>
+    </div>
+  </div>`;
+  return S.atab==='mem'?rAMem():rAEv();
+}
+
+function rAEv(){
+  const evs=S.events.map(e=>`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div style="flex:1;margin-right:8px;">
+        <div style="font-size:14px;font-weight:600;">${e.title}</div>
+        <div style="font-size:11px;color:#999;margin-top:3px;">期限：${fmt(e)}</div>
+        <div style="font-size:11px;color:#999;">リマインド：${(e.rems||[]).map(r=>REM.find(o=>o.h===r.h)?.l||r.h+'時間前').join(' / ')}</div>
+      </div>
+      <button class="btn btn-sm" style="color:#c62828;flex-shrink:0;" onclick="delEv('${e.id}')">削除</button>
+    </div>
+  </div>`).join('');
+  const rops=REM.map(o=>`<option value="${o.h}">${o.l}</option>`).join('');
+  return`<div>
+    <div class="back" onclick="nav('home')">← ホームへ</div>
+    <div class="tabs"><div class="tab tab-a">イベント管理</div><div class="tab" onclick="S.atab='mem';render()">メンバー管理（${S.members.length}名）</div></div>
+    ${evs}
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">＋ 新しいイベントを追加</div>
+      <div class="fr"><div class="fl">イベント名</div><input type="text" id="et" placeholder="例：7月 久保田会 勉強会"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" class="fr">
+        <div><div class="fl">回答期限（日）</div><input type="date" id="ed"></div>
+        <div><div class="fl">時刻</div><input type="time" id="eti" value="20:00"></div>
+      </div>
+      <div class="fr"><div class="fl">リマインドタイミング（複数設定可）</div>
+        <div id="rrows"><div class="rr"><select>${rops}</select><button class="btn btn-sm" onclick="rmRR(this)">削除</button></div></div>
+        <button class="btn btn-full" style="margin-top:6px;" onclick="addRR()">＋ タイミングを追加</button>
+      </div>
+      <button class="btn btn-p btn-full" onclick="addEv()">登録する</button>
+    </div>
+  </div>`;
+}
+
+function rAMem(){
+  const rows=S.members.map((m,i)=>`<div class="mr">
+    <span style="font-size:13px;">${i+1}. ${m.name}</span>
+    <button class="btn btn-sm" style="color:#c62828;" onclick="delMem('${m.id}')">削除</button>
+  </div>`).join('');
+  return`<div>
+    <div class="back" onclick="nav('home')">← ホームへ</div>
+    <div class="tabs"><div class="tab" onclick="S.atab='ev';render()">イベント管理</div><div class="tab tab-a">メンバー管理（${S.members.length}名）</div></div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">メンバー一覧</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="nm" placeholder="名前を入力して追加" style="flex:1;">
+        <button class="btn btn-p" style="flex-shrink:0;" onclick="addMem()">追加</button>
+      </div>
+      ${rows}
+    </div>
+  </div>`;
+}
+
+function nav(p,eid){S.page=p;if(eid)S.selEv=eid;if(p==='attend'){S.selMem='';S.selAns=null;S.search='';}render();}
+
+async function doLogin(){
+  const pw=document.getElementById('pw')?.value;
+  const r=await api('/api/verify-password',{password:pw});
+  if(r.ok){S.alogIn=true;S.atab='ev';render();}else alert('パスワードが違います');
+}
+
+async function addEv(){
+  const t=document.getElementById('et')?.value?.trim();if(!t){alert('イベント名を入力してください');return;}
+  const rems=Array.from(document.querySelectorAll('#rrows select')).map(s=>({h:parseFloat(s.value)}));
+  const ev={id:uid(),title:t,dDate:document.getElementById('ed')?.value,dTime:document.getElementById('eti')?.value,rems};
+  S.events.push(ev);S.responses[ev.id]={};
+  await api('/api/events',{events:S.events});
+  toast('イベントを登録しました！');render();
+}
+
+async function delEv(id){if(!confirm('このイベントを削除しますか？'))return;S.events=S.events.filter(e=>e.id!==id);delete S.responses[id];await api('/api/events',{events:S.events});render();}
+
+async function addMem(){
+  const n=document.getElementById('nm')?.value?.trim();if(!n)return;
+  S.members.push({id:uid(),name:n});
+  await api('/api/members',{members:S.members});
+  document.getElementById('nm').value='';render();
+}
+
+async function delMem(id){if(!confirm('削除しますか？'))return;S.members=S.members.filter(m=>m.id!==id);await api('/api/members',{members:S.members});render();}
+
+function addRR(){const r=document.createElement('div');r.className='rr';r.innerHTML=`<select>${REM.map(o=>`<option value="${o.h}">${o.l}</option>`).join('')}</select><button class="btn btn-sm" onclick="rmRR(this)">削除</button>`;document.getElementById('rrows')?.appendChild(r);}
+function rmRR(b){if(document.querySelectorAll('#rrows .rr').length>1)b.parentElement.remove();}
+
+function doCopy(){
+  const e=S.events.find(x=>x.id===S.selEv);const r=S.responses[e.id]||{};
+  const ns=S.members.filter(m=>!r[m.id]).map(m=>m.name).join('、');
+  const msg=`【出欠確認のお願い】\n${e.title}の出欠がまだ未回答の方がいらっしゃいます。\n期限：${fmt(e)}\n\n未回答の方：${ns}\n\nご回答をお願いします👇\n${window.location.origin}`;
+  navigator.clipboard?navigator.clipboard.writeText(msg).then(()=>toast('コピーしました！LINEに貼り付けてください')).catch(()=>prompt('コピー:',msg)):prompt('コピー:',msg);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,14 +1,18 @@
 {
   "name": "kubotakai-attendance",
-  "version": "1.0.0",
-  "description": "出欠確認ツール for 久保田会",
+  "version": "2.0.0",
+  "description": "久保田会 出欠確認ツール（PostgreSQL対応版）",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "axios": "^1.6.0",
-    "node-cron": "^3.0.3"
+    "axios": "^1.7.2",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
